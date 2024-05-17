@@ -3,16 +3,19 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_HX8357.h"
 
-#define NUM_SENSORS 4
+#define NUM_SENSORS 2
 
+// Pins issue:
+// Screen stop moving: 21, 19, 5, 4
+// Sensor gpio error: 36, 39
 #define trigPin1 8
 #define echoPin1 7
-#define trigPin2 21
-#define echoPin2 19
-#define trigPin3 5
-#define echoPin3 4
-#define trigPin4 36
-#define echoPin4 39
+#define trigPin2 21 //
+#define echoPin2 19 //
+#define trigPin3 5 //
+#define echoPin3 4 //
+#define trigPin4 12
+#define echoPin4 13
 
 #define LED_COUNT 50
 #define LED_PIN 14
@@ -26,13 +29,16 @@ int height = 320;
 uint16_t black = 0x0000;
 uint16_t green = 0x07E0;
 
-const int trigPins[NUM_SENSORS] = {trigPin1, trigPin2, trigPin3, trigPin4};
-const int echoPins[NUM_SENSORS] = {echoPin1, echoPin2, echoPin3, echoPin4};
+// const int trigPins[NUM_SENSORS] = {trigPin1, trigPin2, trigPin3, trigPin4};
+// const int echoPins[NUM_SENSORS] = {echoPin1, echoPin2, echoPin3, echoPin4};
 
-# Screen controller
+const int trigPins[NUM_SENSORS] = {trigPin1, trigPin4};
+const int echoPins[NUM_SENSORS] = {echoPin1, echoPin4};
+
+// Screen controller
 Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
 
-# LED controller
+// LED controller
 WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
  
@@ -41,18 +47,30 @@ void setup() {
   delay(250);
 
   screenSetup();
-
   screenReset();
-  
-  // sensorSetup();
+  delay(250);
 
+  sensorSetup();
+  delay(250);
+
+  ledSetup();
 }
 
 void loop() {
   drawRadar();
+  delay(250);
+
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    Serial.print("Sensor ");
+    Serial.println(i);
+    getdistance(i);
+    delay(250);
+  }
+
+  ledReaction();
 }
 
-def screenSetup() {
+void screenSetup() {
   tft.begin();
   delay(1000);
   tft.fillScreen(black);
@@ -60,7 +78,7 @@ def screenSetup() {
   tft.setCursor(0,0);
 }
 
-def screenReset() {
+void screenReset() {
   // set background
   tft.fillScreen(black);
 
@@ -70,7 +88,7 @@ def screenReset() {
   }
 }
 
-def ledSetup() {
+void ledSetup() {
   ws2812fx.init();                     // 初始化LED
   ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
   ws2812fx.setSpeed(200);              // 设置速度
@@ -79,7 +97,7 @@ def ledSetup() {
   ws2812fx.start();                    // 启动显示
 }
 
-def ledReaction() {
+void ledReaction() {
   ws2812fx.service();                  // 维护LED显示更新
 
   // 每隔10秒改变效果
@@ -120,14 +138,17 @@ void drawRadar() {
   }
 }
 
-def sensorSetup(){
-  for (int i = 0; i < numSensors; ++i) {
+void sensorSetup(){
+  for (int i = 0; i < NUM_SENSORS; i++) {
     pinMode(trigPins[i], OUTPUT);
     pinMode(echoPins[i], INPUT);
   }
 }
 
-def getdistance(int sensor_num){
+void getdistance(int sensor_num){
+  long duration = 0;
+  long distance = 0;
+
   // Clear the trigPin
   digitalWrite(trigPins[sensor_num], LOW);
   delayMicroseconds(2);
@@ -136,13 +157,12 @@ def getdistance(int sensor_num){
   delayMicroseconds(10);
   digitalWrite(trigPins[sensor_num], LOW);
   // Read the duration of the echo pulse
-  duration = pulseIn(echoPin[sensor_num], HIGH);
+  duration = pulseIn(echoPins[sensor_num], HIGH);
+  
   // Calculate the distance in centimeters (cm)
   distance = duration * 0.034 / 2;
   // Print the distance to the serial monitor
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
-  delay(1000); // Wait for 1 second before taking the next measurement
-
 }
