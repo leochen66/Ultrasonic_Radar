@@ -2,30 +2,15 @@
 #include <WS2812FX.h>
 #include "Adafruit_GFX.h"
 #include "Adafruit_HX8357.h"
+#include "myhead.h"
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 
-#define NUM_SENSORS 2
-
-// Pins issue:
-// Screen stop moving: 21, 19, 5, 4
-// Sensor gpio error: 36, 39
-#define trigPin1 8
-#define echoPin1 7
-#define trigPin2 21 //
-#define echoPin2 19 //
-#define trigPin3 5 //
-#define echoPin3 4 //
-#define trigPin4 12
-#define echoPin4 13
-
-#define LED_COUNT 50
-#define LED_PIN 14
-
-#define TFT_CS   15
-#define TFT_DC   33
-#define TFT_RST  -1
+// Define the current state for each sensor
+SensorState sensor1State = SENSOR1_FAR;
+SensorState sensor2State = SENSOR2_FAR;
+SensorState sensor3State = SENSOR3_NO;
 
 int width = 480;
 int height = 320;
@@ -34,11 +19,11 @@ uint16_t green = 0x07E0;
 uint16_t skyBlue = 0x007BFF;
 uint16_t red = 0xF800;
 
-// const int trigPins[NUM_SENSORS] = {trigPin1, trigPin2, trigPin3, trigPin4};
-// const int echoPins[NUM_SENSORS] = {echoPin1, echoPin2, echoPin3, echoPin4};
+Trail trails[MAX_TRAILS];
+int trailIndex = 0;
 
-const int trigPins[NUM_SENSORS] = {trigPin1, trigPin4};
-const int echoPins[NUM_SENSORS] = {echoPin1, echoPin4};
+const int trigPins[NUM_SENSORS] = {trigPin1, trigPin2, trigPin3};
+const int echoPins[NUM_SENSORS] = {echoPin1, echoPin2, echoPin3};
 
 // Screen controller
 Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
@@ -60,6 +45,7 @@ void setup() {
   delay(250);
 
   ledSetup();
+  delay(250);
 
   xTaskCreatePinnedToCore(
                     TaskSensor,   /* Task function. */
@@ -82,20 +68,15 @@ void setup() {
   delay(500);
 }
 
-unsigned long previousLedMillis = 0;
-const long ledInterval = 1000; // LED反应间隔为1秒
-
 void loop() {
 }
 
 void TaskSensor(void * pvParameters){
   for (;;) {
-    drawRadar();
-
-    for (int i = 0; i < NUM_SENSORS; i++) {
-      getdistance(i);
-      vTaskDelay(10 / portTICK_PERIOD_MS); // Replace delay with vTaskDelay
-    }
+    drawRadar(false);
+    runSensor();
+    drawRadar(true);
+    runSensor();
   }
 }
 
@@ -123,7 +104,6 @@ void screenReset() {
   }
 }
 
-
 void ledSetup() {
   ws2812fx.init();                     // 初始化LED
   ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
@@ -143,52 +123,90 @@ void ledReaction() {
   }
 }
 
-void drawRadar() {
-
+void drawRadar(bool reverse) {
   int prev_x = 0;
   int prev_y = 0;
 
-  for (int angle = 0; angle < 190; angle += 10) {
+  int start_angle = reverse ? 0 : 200;
+  int end_angle = reverse ? 200 : -20;
+  int step = reverse ? 2 : -2;
 
-    // 清除上一次繪製的直線
-    tft.drawLine(width / 2, 0, prev_x, prev_y, black);
+  for (int i = start_angle; reverse ? (i < end_angle) : (i > end_angle); i += step) {
+    int angle = i;
+    
+    // Clear the oldest trail
+    if (trailIndex >= MAX_TRAILS) {
+      int clearIndex = (trailIndex + 1) % MAX_TRAILS;
+      tft.drawLine(width / 2, 0, trails[clearIndex].end_x, trails[clearIndex].end_y, black);
+      tft.drawLine(width / 2, 0, trails[clearIndex].mid_x, trails[clearIndex].mid_y, black);
+      tft.drawLine(trails[clearIndex].mid_x, trails[clearIndex].mid_y, trails[clearIndex].end_x, trails[clearIndex].end_y, black);
+    }
 
-    // 計算最外圈同心圓的半徑
+    // Calculate the radius of the outermost concentric circle
     int max_radius = (width / 2) - 25;
 
-    // 計算直線終點位置
+    // Calculate the end point of the line
     int end_x = width / 2 + cos(PI / 180 * angle) * max_radius;
     int end_y = sin(PI / 180 * angle) * max_radius;
+    int mid_x = width / 2 + cos(PI / 180 * angle) * (max_radius / 2);
+    int mid_y = sin(PI / 180 * angle) * (max_radius / 2);
 
-    // 繪製新的直線
-    tft.drawLine(width / 2, 0, end_x, end_y, green);
+    // Determine the current sensor state based on the angle
+    SensorState currentState;
+    if (angle >= 0 && angle < 60) {
+      currentState = sensor1State;
+    } else if (angle >= 60 && angle < 120) {
+      currentState = sensor2State;
+    } else if (angle >= 120 && angle < 180) {
+      currentState = sensor3State;
+    } else {
+      currentState = SENSOR1_NO; // Default to SENSOR1_NO for angles outside 0-180
+    }
 
-    // 更新上一次線段的終點位置
-    prev_x = end_x;
-    prev_y = end_y;
+    // Draw the line based on the current sensor state
+    switch (currentState) {
+      case SENSOR1_NEAR:
+      case SENSOR2_NEAR:
+      case SENSOR3_NEAR:
+        // Draw the entire line in red
+        tft.drawLine(width / 2, 0, end_x, end_y, red);
+        // Update the trail to full length
+        trails[trailIndex % MAX_TRAILS].mid_x = end_x;
+        trails[trailIndex % MAX_TRAILS].mid_y = end_y;
+        trails[trailIndex % MAX_TRAILS].end_x = end_x;
+        trails[trailIndex % MAX_TRAILS].end_y = end_y;
+        break;
+      case SENSOR1_FAR:
+      case SENSOR2_FAR:
+      case SENSOR3_FAR:
+        // Draw half the line in red and half in green
+        tft.drawLine(width / 2, 0, mid_x, mid_y, red);
+        tft.drawLine(mid_x, mid_y, end_x, end_y, green);
+        // Update the trail to the midpoint and full length
+        trails[trailIndex % MAX_TRAILS].mid_x = mid_x;
+        trails[trailIndex % MAX_TRAILS].mid_y = mid_y;
+        trails[trailIndex % MAX_TRAILS].end_x = end_x;
+        trails[trailIndex % MAX_TRAILS].end_y = end_y;
+        break;
+        break;
+      case SENSOR1_NO:
+      case SENSOR2_NO:
+      case SENSOR3_NO:
+      default:
+        // Draw the entire line in green
+        tft.drawLine(width / 2, 0, end_x, end_y, green);
+        // Update the trail to full length
+        trails[trailIndex % MAX_TRAILS].mid_x = end_x;
+        trails[trailIndex % MAX_TRAILS].mid_y = end_y;
+        trails[trailIndex % MAX_TRAILS].end_x = end_x;
+        trails[trailIndex % MAX_TRAILS].end_y = end_y;
+        break;
+    }
 
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-  }
-  for (int angle = 200; angle > -10; angle -= 10) {
+    // Update the trail
+    trailIndex++;
 
-    // 清除上一次繪製的直線
-    tft.drawLine(width / 2, 0, prev_x, prev_y, black);
-
-    // 計算最外圈同心圓的半徑
-    int max_radius = (width / 2) - 25;
-
-    // 計算直線終點位置
-    int end_x = width / 2 + cos(PI / 180 * angle) * max_radius;
-    int end_y = sin(PI / 180 * angle) * max_radius;
-
-    // 繪製新的直線
-    tft.drawLine(width / 2, 0, end_x, end_y, green);
-
-    // 更新上一次線段的終點位置
-    prev_x = end_x;
-    prev_y = end_y;
-
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(13 / portTICK_PERIOD_MS);
   }
 }
 
@@ -199,21 +217,21 @@ void sensorSetup(){
   }
 }
 
-void getdistance(int sensor_num){
+void runSensor(){
   long distances[NUM_SENSORS] = {0};
 
   for (int i = 0; i < NUM_SENSORS; i++) {
     long duration = 0;
 
     // Clear the trigPin
-    digitalWrite(trigPins[sensor_num], LOW);
+    digitalWrite(trigPins[i], LOW);
     delayMicroseconds(2);
     // Send a 10-microsecond pulse to trigger the ultrasonic senso
-    digitalWrite(trigPins[sensor_num], HIGH);
+    digitalWrite(trigPins[i], HIGH);
     delayMicroseconds(10);
-    digitalWrite(trigPins[sensor_num], LOW);
+    digitalWrite(trigPins[i], LOW);
     // Read the duration of the echo pulse
-    duration = pulseIn(echoPins[sensor_num], HIGH);
+    duration = pulseIn(echoPins[i], HIGH);
     
     // Calculate the distance in centimeters (cm)
     distances[i] = duration * 0.034 / 2;
@@ -225,7 +243,27 @@ void getdistance(int sensor_num){
     Serial.print(distances[i]);
     Serial.println(" cm");
 
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Replace delay with vTaskDelay
+    // Update Screen States
+    if (i == 0 && distances[i] > FAR_BOUND)
+      sensor1State = SENSOR1_NO;
+    else if (i == 1 && distances[i] > FAR_BOUND)
+      sensor2State = SENSOR2_NO;
+    else if (i == 2 && distances[i] > FAR_BOUND)
+      sensor3State = SENSOR3_NO;
+    else if (i == 0 && distances[i] < NEAR_BOUND)
+      sensor1State = SENSOR1_NEAR;
+    else if (i == 1 && distances[i] < NEAR_BOUND)
+      sensor2State = SENSOR2_NEAR;
+    else if (i == 2 && distances[i] < NEAR_BOUND)
+      sensor3State = SENSOR3_NEAR;
+    else if (i == 0 && distances[i] < FAR_BOUND && distances[i] > NEAR_BOUND)
+      sensor1State = SENSOR1_FAR;
+    else if (i == 1 && distances[i] < FAR_BOUND && distances[i] > NEAR_BOUND)
+      sensor2State = SENSOR2_FAR;
+    else if (i == 2 && distances[i] < FAR_BOUND && distances[i] > NEAR_BOUND)
+      sensor3State = SENSOR3_FAR;
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 
   bool anyLessThan50 = false;
@@ -245,3 +283,9 @@ void getdistance(int sensor_num){
   }
   Serial.println();
 }
+
+
+
+// Note
+// Sepearate screen task
+// change mode logic
