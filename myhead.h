@@ -18,13 +18,6 @@
 
 #define TRANSITION_SPEED 400
 
-// enum LEDState {
-//   BLUE_BREATH,
-//   TRANSITION1,
-//   RED_BREATH,
-//   TRANSITION2,
-// };
-
 enum LEDState {
   BLUE_BREATH,
   DISTANCE1,
@@ -50,7 +43,7 @@ struct Trail {
 
 // Screen States
 #define NEAR_BOUND  50
-#define FAR_BOUND   100
+#define FAR_BOUND   150
 
 enum SensorState {
   SENSOR1_NEAR,

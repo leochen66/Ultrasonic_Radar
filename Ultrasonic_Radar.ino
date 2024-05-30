@@ -296,7 +296,7 @@ void drawRadar(bool reverse) {
     // Update the trail
     trailIndex++;
 
-    vTaskDelay(13 / portTICK_PERIOD_MS);
+    vTaskDelay(6 / portTICK_PERIOD_MS);
   }
 }
 
@@ -377,8 +377,10 @@ void runSensor(){
     led_state = DISTANCE1;
   }
   else{
+    if (led_state != BLUE_BREATH){
+      ledNeedReset = true;
+    }
     led_state = BLUE_BREATH;
-    ledNeedReset = true;
   }
 
   Serial.println();
