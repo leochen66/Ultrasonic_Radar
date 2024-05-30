@@ -115,12 +115,12 @@ void screenReset() {
 }
 
 void ledSetup() {
-  ws2812fx.init();                     // 初始化LED
-  ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
-  ws2812fx.setSpeed(2000);              // 设置速度
-  ws2812fx.setColor(skyBlue);         // 设置颜色为天蓝色
-  ws2812fx.setMode(FX_MODE_FADE);    // 设置显示模式
-  ws2812fx.start();                    // 启动显示
+  ws2812fx.init();
+  ws2812fx.setBrightness(255);
+  ws2812fx.setSpeed(2000);
+  ws2812fx.setColor(skyBlue);
+  ws2812fx.setMode(FX_MODE_FADE);
+  ws2812fx.start();
 }
 
 void keepPattern4Off() {
@@ -129,93 +129,84 @@ void keepPattern4Off() {
   }
 }
 
-// uint16_t CustomModeRed(void) {
-//   unsigned long now = millis();
+uint16_t CustomMode1(void) {
 
-//   if (state == 0) {
-//     // ws2812fx.fill(WHITE, 0, LED_COUNT);
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 1;
-//   } else if (state == 1 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern1); i++) {
-//       ws2812fx.setPixelColor(pattern1[i], RED);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 2;
-//   } else if (state == 2 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern2); i++) {
-//       ws2812fx.setPixelColor(pattern2[i], RED);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 3;
-//   } else if (state == 3 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern3); i++) {
-//       ws2812fx.setPixelColor(pattern3[i], RED);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 4;
-//     led_state = RED_BREATH;
-//   }
+  for (int i = 0; i < sizeof(pattern2); i++) {
+    ws2812fx.setPixelColor(pattern2[i], skyBlue);
+  }
+  for (int i = 0; i < sizeof(pattern1); i++) {
+    ws2812fx.setPixelColor(pattern1[i], RED);
+  }
 
-//   ws2812fx.show();
-//   return 0;
-// }
+  ws2812fx.setPixelColor(7, skyBlue);
+  ws2812fx.setPixelColor(12, skyBlue);
+  ws2812fx.setPixelColor(13, skyBlue);
+  ws2812fx.setBrightness(255);
 
-// uint16_t CustomModeBlue(void) {
-//   unsigned long now = millis();
+  keepPattern4Off();
+  ws2812fx.show();
+  return 0;
+}
 
-//   if (state == 0) {
-//     // ws2812fx.fill(WHITE, 0, LED_COUNT);
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 1;
-//   } else if (state == 1 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern3); i++) {
-//       ws2812fx.setPixelColor(pattern3[i], skyBlue);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 2;
-//   } else if (state == 2 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern2); i++) {
-//       ws2812fx.setPixelColor(pattern2[i], skyBlue);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 3;
-//   } else if (state == 3 && (now - lastChange) >= TRANSITION_SPEED) {
-//     for (int i = 0; i < sizeof(pattern1); i++) {
-//       ws2812fx.setPixelColor(pattern1[i], skyBlue);
-//     }
-//     keepPattern4Off();
-//     lastChange = now;
-//     state = 4;
-//     led_state = BLUE_BREATH;
-//     ledNeedReset = true;
-//   }
+uint16_t CustomMode2(void) {
 
-//   ws2812fx.show();
-//   return 0;
-// }
+  
+  for (int i = 0; i < sizeof(pattern3); i++) {
+    ws2812fx.setPixelColor(pattern3[i], skyBlue);
+  }
+  for (int i = 0; i < sizeof(pattern1); i++) {
+    ws2812fx.setPixelColor(pattern1[i], RED);
+  }
+  for (int i = 0; i < sizeof(pattern2); i++) {
+    ws2812fx.setPixelColor(pattern2[i], RED);
+  }
+
+  ws2812fx.setPixelColor(13, skyBlue);
+  ws2812fx.setPixelColor(7, RED);
+  ws2812fx.setPixelColor(12, RED);
+  ws2812fx.setBrightness(255);
+
+  keepPattern4Off();
+  ws2812fx.show();
+  return 0;
+}
+
+uint16_t CustomMode3(void) {
+
+  for (int i = 0; i < sizeof(pattern1); i++) {
+    ws2812fx.setPixelColor(pattern1[i], RED);
+  }
+  for (int i = 0; i < sizeof(pattern2); i++) {
+    ws2812fx.setPixelColor(pattern2[i], RED);
+  }
+  for (int i = 0; i < sizeof(pattern3); i++) {
+    ws2812fx.setPixelColor(pattern3[i], RED);
+  }
+  ws2812fx.setBrightness(255);
+
+  keepPattern4Off();
+  ws2812fx.show();
+  return 0;
+}
 
 void ledReaction() {
   if (led_state == BLUE_BREATH && ledNeedReset) {
     ledNeedReset = false;
-    ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
-    ws2812fx.setSpeed(2000);              // 设置速度
-    ws2812fx.setColor(skyBlue);         // 设置颜色为天蓝色
-    ws2812fx.setMode(FX_MODE_FADE);    // 设置显示模式
+    ws2812fx.setBrightness(255);
+    ws2812fx.setSpeed(2000);
+    ws2812fx.setColor(skyBlue);
+    ws2812fx.setMode(FX_MODE_FADE);
   }
-  else if (led_state == TRANSITION1) {
-    ws2812fx.setCustomMode(CustomModeRed);
+  else if (led_state == DISTANCE1) {
+    ws2812fx.setCustomMode(CustomMode1);
     ws2812fx.setMode(FX_MODE_CUSTOM);
   }
-  else if (led_state == TRANSITION2) {
-    ws2812fx.setCustomMode(CustomModeBlue);
+  else if (led_state == DISTANCE2) {
+    ws2812fx.setCustomMode(CustomMode2);
+    ws2812fx.setMode(FX_MODE_CUSTOM);
+  }
+  else if (led_state == DISTANCE3) {
+    ws2812fx.setCustomMode(CustomMode3);
     ws2812fx.setMode(FX_MODE_CUSTOM);
   }
 
@@ -365,31 +356,30 @@ void runSensor(){
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 
-  bool anyLessThan50 = false;
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    if (distances[i] < 50) { // Adjust the distance threshold as needed
-      anyLessThan50 = true;
-      break; // Exit the loop early if any distance is less than 50
-    }
+  // find min distance
+  long minDistance = distances[0];
+  for (int i = 1; i < NUM_SENSORS; i++) {
+      if (distances[i] < minDistance) {
+          minDistance = distances[i];
+      }
   }
 
-  if (anyLessThan50) {
-    if (led_state == BLUE_BREATH){
-      Serial.print("LED_STATE = ");
-      Serial.println(TRANSITION1);
-      state = 0;
-      led_state = TRANSITION1;
-    }
-  } else {
-    if (led_state == RED_BREATH){
-      // Serial.print("LED_STATE = ");
-      // Serial.println(TRANSITION2);
-      // state = 0;
-      // led_state = TRANSITION2;
-
-      led_state = BLUE_BREATH;
-      ledNeedReset = true;
-    }
+  if (minDistance < 50){
+    Serial.println("Set Sate: DISTANCE3");
+    led_state = DISTANCE3;
+  } 
+  else if (minDistance >= 50 && minDistance < 100){
+    Serial.println("Set Sate: DISTANCE2");
+    led_state = DISTANCE2;
   }
+  else if (minDistance >= 100 && minDistance < 150){
+    Serial.println("Set Sate: DISTANCE1");
+    led_state = DISTANCE1;
+  }
+  else{
+    led_state = BLUE_BREATH;
+    ledNeedReset = true;
+  }
+
   Serial.println();
 }
