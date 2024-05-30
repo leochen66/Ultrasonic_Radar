@@ -25,6 +25,13 @@ int trailIndex = 0;
 const int trigPins[NUM_SENSORS] = {trigPin1, trigPin2, trigPin3};
 const int echoPins[NUM_SENSORS] = {echoPin1, echoPin2, echoPin3};
 
+unsigned long lastChange = 0;
+int state = 0;
+
+int pattern1[] = {0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36};
+int pattern2[] = {5, 6, 7, 10, 13, 16, 20, 23, 26, 29, 30, 31};
+int pattern3[] = {11, 12, 17, 19, 24, 25};
+
 // Screen controller
 Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
 
@@ -105,22 +112,59 @@ void screenReset() {
 }
 
 void ledSetup() {
-  ws2812fx.init();                     // 初始化LED
-  ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
-  ws2812fx.setSpeed(2000);              // 设置速度
-  ws2812fx.setColor(skyBlue);         // 设置颜色为天蓝色
-  ws2812fx.setMode(FX_MODE_FADE);    // 设置显示模式
-  ws2812fx.start();                    // 启动显示
+  // ws2812fx.init();                     // 初始化LED
+  // ws2812fx.setBrightness(255);         // 设置亮度 (0-255)
+  // ws2812fx.setSpeed(2000);              // 设置速度
+  // ws2812fx.setColor(skyBlue);         // 设置颜色为天蓝色
+  // ws2812fx.setMode(FX_MODE_FADE);    // 设置显示模式
+  // ws2812fx.start();                    // 启动显示
+
+  ws2812fx.init();
+  ws2812fx.setBrightness(255);
+  ws2812fx.setCustomMode(myCustomMode);
+  ws2812fx.setMode(FX_MODE_CUSTOM);
+  ws2812fx.start();
+}
+
+uint16_t myCustomMode(void) {
+  unsigned long now = millis();
+
+  if (state == 0) {
+    ws2812fx.fill(WHITE);
+    lastChange = now;
+    state = 1;
+  } else if (state == 1 && (now - lastChange) >= 500) {
+    for (int i = 0; i < sizeof(pattern1) / sizeof(pattern1[0]); i++) {
+      ws2812fx.setPixelColor(pattern1[i], RED);
+    }
+    lastChange = now;
+    state = 2;
+  } else if (state == 2 && (now - lastChange) >= 500) {
+    for (int i = 0; i < sizeof(pattern2) / sizeof(pattern2[0]); i++) {
+      ws2812fx.setPixelColor(pattern2[i], RED);
+    }
+    lastChange = now;
+    state = 3;
+  } else if (state == 3 && (now - lastChange) >= 500) {
+    for (int i = 0; i < sizeof(pattern3) / sizeof(pattern3[0]); i++) {
+      ws2812fx.setPixelColor(pattern3[i], RED);
+    }
+    lastChange = now;
+    state = 4;
+  }
+
+  ws2812fx.show();
+  return 0;
 }
 
 void ledReaction() {
   ws2812fx.service();                  // 维护LED显示更新
 
-  if (LED_STATE == 1) {
-    ws2812fx.setColor(RED);            // Set color to red if LED_STATE is 1
-  } else {
-    ws2812fx.setColor(skyBlue);       // Set color to sky blue if LED_STATE is 0
-  }
+  // if (LED_STATE == 1) {
+  //   ws2812fx.setColor(RED);            // Set color to red if LED_STATE is 1
+  // } else {
+  //   ws2812fx.setColor(skyBlue);       // Set color to sky blue if LED_STATE is 0
+  // }
 }
 
 void drawRadar(bool reverse) {
@@ -287,5 +331,4 @@ void runSensor(){
 
 
 // Note
-// Sepearate screen task
 // change mode logic
