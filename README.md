@@ -12,4 +12,4 @@ We used laser cutting on 6 mm MDF to shape a box. To assemble all the pieces, we
 ![](/image/overview2.png)
 
 ## Demo Video
-<iframe width="560" height="315" src="https://www.youtube.com/embed/0kuO2va-eYk?si=5Rl-Y-KNqg8B27hr" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![IMAGE ALT TEXT](/image/cover.png)](https://www.youtube.com/embed/0kuO2va-eYk?si=5Rl-Y-KNqg8B27hr "")
